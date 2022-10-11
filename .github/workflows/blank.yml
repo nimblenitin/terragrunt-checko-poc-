@@ -60,7 +60,7 @@ jobs:
       - name: Check out private repo
         uses: actions/checkout@v2
         with:
-          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-key: ${{ secrets.SECRET_REPO_DEPLOY_KEY }}
           repository: infracloudio/terraform-aws-iam 
        
       - name: Plan Terragrunt
