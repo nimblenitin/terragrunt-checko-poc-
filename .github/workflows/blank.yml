@@ -57,7 +57,12 @@ jobs:
         run: |          
           echo $PWD
           ls          
-          
+      - name: Check out private repo
+        uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          repository: infracloudio/terraform-aws-iam 
+       
       - name: Plan Terragrunt
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
