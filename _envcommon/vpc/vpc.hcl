@@ -1,5 +1,5 @@
 terraform {
-  source = "git@github.com:/infracloudio/terraform-aws-iam"
+  source = "git::https://github.com/infracloudio/terraform-aws-iam.git"
   
 }
 
