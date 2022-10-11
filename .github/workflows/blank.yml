@@ -3,6 +3,8 @@ name: checkov-code-scan
 on: 
   pull_request:
   workflow_dispatch:
+env:
+  tf_working_dir: './dev/vpc'
     
 jobs:
   plan:
@@ -56,15 +58,13 @@ jobs:
           echo $PWD
           ls          
           
-      - name: Plan Terragrunt
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo $PWD
-          cd ./dev/vpc
-          echo $PWD
-          terragrunt plan -out tfplan.binary -no-color
-          terragrunt show -json tfplan.binary | jq '.' > tfplan.json
+      - name: 'Terragrunt Plan'
+        uses: the-commons-project/terragrunt-github-actions@master
+        with:
+          tf_actions_subcommand: 'plan'
+          tf_actions_working_dir: ${{ env.tf_working_dir }}
+          tf_actions_comment: true
+          ssh-private-key: ${{ secrets.SECRET_REPO_DEPLOY_KEY }}
                 
       - name: checkov scan
         id: Bridgecrew-file-scanner
