@@ -64,9 +64,12 @@ jobs:
           repository: infracloudio/terraform-aws-iam 
        
       - name: Plan Terragrunt
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
         run: |
+          git config --local --remove-section http."https://github.com/"
+          git config --global url."https://foo:${GH_TOKEN}@github.com/infracloudio".insteadOf "https://github.com/infracloudio"
+          env:
+            GH_TOKEN: ${{ secrets.GH_TOKEN }}
           echo $PWD
           cd ./dev/vpc
           echo $PWD
