@@ -64,7 +64,8 @@ jobs:
           tf_actions_subcommand: 'plan'
           tf_actions_working_dir: ${{ env.tf_working_dir }}
           tf_actions_comment: true
-          ssh-private-key: ${{ secrets.SECRET_REPO_DEPLOY_KEY }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 
       - name: checkov scan
         id: Bridgecrew-file-scanner
