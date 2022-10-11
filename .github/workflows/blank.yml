@@ -1,0 +1,87 @@
+name: checkov-code-scan
+
+on: 
+  pull_request:
+  workflow_dispatch:
+    
+jobs:
+  plan:
+    name: checkov-scan
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+          
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        
+      #- name: Setup Terraform
+      #  uses: hashicorp/setup-terraform@v1
+      #  with:
+      #    terraform_wrapper: false
+          
+      - name: Terragrunt installer
+        # You may pin to the exact commit or the version.
+        # uses: autero1/action-terragrunt@e8f93f8d057bb039ed9c213bdf77ed8821bf241e
+        uses: autero1/action-terragrunt@v1.1.1
+        with:
+          # Terragrunt version to install
+          terragrunt_version: v0.38.7
+      
+      - name: Configure AWS Credentials
+        id: awsconfig
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
+                    
+      - name: Post comment to GitHub PR if aws config failed
+        uses: mshick/add-pr-comment@v1
+        if: ${{ failure() && steps.awsconfig.outcome == 'failure' }}
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          #repo-token-user-login: 'github-actions[bot]'
+          message: |
+            AWS configuration failed. This is required to generate Terragrunt plan.
+            Status: **${{ steps.awsconfig.outcome }}**
+                        
+      - name: Initialize Terragrunt
+        run: |
+          terragrunt init -input=false
+      
+      - name: list and pwd
+        run: |          
+          echo $PWD
+          ls          
+          
+      - name: Plan Terragrunt
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo $PWD
+          cd ./dev/vpc
+          echo $PWD
+          terragrunt plan -out tfplan.binary -no-color
+          terragrunt show -json tfplan.binary | jq '.' > tfplan.json
+                
+      - name: checkov scan
+        id: Bridgecrew-file-scanner
+        uses: bridgecrewio/checkov-action@master
+        with:
+          #directory: .
+          file: ./dev/vpc/tfplan.json
+          output_format: github_failed_only
+          soft_fail: false
+          skip_check: CKV_AWS_21,CKV_AWS_19,CKV_AWS_145,CKV2_AWS_6,CKV_AWS_144,CKV_AWS_18
+          
+      - name: Post comment to GitHub PR
+        uses: mshick/add-pr-comment@v1
+        if: ${{ failure() && steps.Bridgecrew-file-scanner.outcome == 'failure' }}
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          #repo-token-user-login: 'github-actions[bot]'
+          #allow-repeats: true
+          message: |
+            ${{ env.CHECKOV_RESULTS }}
